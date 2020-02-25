@@ -16,8 +16,9 @@
         </div>
         <table class="cuadro">
                 <tr v-for="(item ,indexX) in nivelActual.filas" v-bind:key="indexX">
-                  <td class="ladrillo" v-on:click="mostrarCasilla(indexX,indexJ)" v-for="(item ,indexJ) in nivelActual.columnas" v-bind:key="indexJ">
+                  <td class="ladrillo" v-on:click="mostrarCasilla(indexX,indexJ)"  v-on:contextmenu.prevent="marcarMina(indexX,indexJ)" v-for="(item ,indexJ) in nivelActual.columnas" v-bind:key="indexJ">
                     <div v-if="cuadros[indexX][indexJ].visible">{{cuadros[indexX][indexJ].valor}}</div>
+                    <div v-else-if="cuadros[indexX][indexJ].marcado">🏁</div>
                     <div v-else> </div>
                   </td>
                 </tr>
@@ -80,6 +81,7 @@ export default {
                     let cuadro = {
                         valor:0,
                         visible:false,
+                        marcado:false,
                         fila:i,
                         columna:j
                     }
@@ -130,6 +132,7 @@ export default {
             //Varifica casilla no bomba y que no sea visible para sumar puntos.
             if(this.cuadros[x][y].valor!='💣' && this.cuadros[x][y].visible==false){
                 this.puntos+=this.cuadros[x][y].valor;
+                this.mostrarCeros(x,y);
             }
             //Varifica casilla bomba 
             if(this.cuadros[x][y].valor=='💣' && this.cuadros[x][y].visible==false){
@@ -148,6 +151,7 @@ export default {
           }else{
             console.log("La partida termino, no puedes marcar mas casillas");
           }
+          console.log(window.event);
         
             
             
@@ -161,7 +165,35 @@ export default {
                 this.nivelActual=this.nivelExperto;
             }
             this.iniciarNivel();
+        },
+        marcarMina(x,y){
+            if(this.cuadros[x][y].marcado)
+                this.cuadros[x][y].marcado=false;
+            else
+                this.cuadros[x][y].marcado=true;
+        },
+        mostrarCeros(x,y){
+            if( x<0 || y<0 || x>=this.nivelActual.columnas || y>=this.nivelActual.filas){
+                return ;
+            }
+            if(this.cuadros[x][y].visible==false && this.cuadros[x][y].marcado==false){
+                if(this.cuadros[x][y].valor=='💣'){
+                    return ;
+                }else if(this.cuadros[x][y].valor!=0){
+                    this.cuadros[x][y].visible=true;
+                    return ;
+                }
+                console.log("Tiene un cero");
+                this.cuadros[x][y].visible=true;
+                this.mostrarCeros(x+1,y);
+                this.mostrarCeros(x,y+1);
+                this.mostrarCeros(x-1,y);
+                this.mostrarCeros(x,y-1);
+            }
+            
+
         }
+
 
       }
 }

@@ -1,4 +1,4 @@
-# holamundo
+# Busca Minas con VueJs
 
 ## Project setup
 ```
