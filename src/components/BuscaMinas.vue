@@ -1,5 +1,8 @@
 <template>
   <div id="Tablero" >
+
+
+        <h4 v-if="partidaGanada()">¡¡GANASTE LA PARTIDA!!</h4>
         <div class="niveles">
             <span>Nivel:</span>
             <div class="Nivel" v-on:click="cambiarNivel(1)">Nivel 1</div>
@@ -17,7 +20,8 @@
         <table class="cuadro">
                 <tr v-for="(item ,indexX) in nivelActual.filas" v-bind:key="indexX">
                   <td class="ladrillo" v-on:click="mostrarCasilla(indexX,indexJ)"  v-on:contextmenu.prevent="marcarMina(indexX,indexJ)" v-for="(item ,indexJ) in nivelActual.columnas" v-bind:key="indexJ">
-                    <div v-if="cuadros[indexX][indexJ].visible">{{cuadros[indexX][indexJ].valor}}</div>
+                    <div class="sinMina"  v-if="cuadros[indexX][indexJ].visible && cuadros[indexX][indexJ].valor==0"> </div>
+                    <div v-else-if="cuadros[indexX][indexJ].visible">{{cuadros[indexX][indexJ].valor}}</div>
                     <div v-else-if="cuadros[indexX][indexJ].marcado">🏁</div>
                     <div v-else> </div>
                   </td>
@@ -29,6 +33,7 @@
 <script>
 const PARTIDA_EN_CURSO=0;
 const PARTIDA_FINALIZADA=1;
+const PARTIDA_FINALIZADA_GANASTE=3;
 
 
 export default {
@@ -39,7 +44,7 @@ export default {
             nivel: 1,
             filas: 5,
             columnas:5,
-            minas:5
+            minas:1
         },
         nivelIntermedio:{
             nivel: 2,
@@ -56,6 +61,7 @@ export default {
         nivelActual:null,
         minas:[],
         puntos:0,
+        casillasMarcadas:0,
         estadoJuego:PARTIDA_EN_CURSO
         }
     },
@@ -73,6 +79,7 @@ export default {
             this.puntos=0;
             this.minas=[];
             this.cuadros = [];
+            this.casillasMarcadas=0;
             this.estadoJuego=PARTIDA_EN_CURSO;
             //Valores vacions de los cuadros
             for( let i = 0; i< filas; i++){
@@ -124,7 +131,6 @@ export default {
 
                 }
             }
-            console.log(this.minas);
         },
         mostrarCasilla(x,y){
 
@@ -133,25 +139,27 @@ export default {
             if(this.cuadros[x][y].valor!='💣' && this.cuadros[x][y].visible==false){
                 this.puntos+=this.cuadros[x][y].valor;
                 this.mostrarCeros(x,y);
+                if(this.partidaGanada()){
+                    this.estadoJuego=PARTIDA_FINALIZADA_GANASTE;
+                    this.mostrarMinas();
+                }
             }
             //Varifica casilla bomba 
             if(this.cuadros[x][y].valor=='💣' && this.cuadros[x][y].visible==false){
+                this.cuadros[x][y].valor='💥';
                 //Termina la partida
                 this.estadoJuego=PARTIDA_FINALIZADA;
 
+                this.mostrarMinas();
 
-                //Muestra todas las bombas;
-                for(let i=0;i<this.minas.length;i++){
-                  let mina=this.minas[i];
-                  this.cuadros[mina.fila][mina.columna].visible=true;
-                }
+
+                
             }
 
             this.cuadros[x][y].visible=true;
           }else{
             console.log("La partida termino, no puedes marcar mas casillas");
           }
-          console.log(window.event);
         
             
             
@@ -173,25 +181,48 @@ export default {
                 this.cuadros[x][y].marcado=true;
         },
         mostrarCeros(x,y){
-            if( x<0 || y<0 || x>=this.nivelActual.columnas || y>=this.nivelActual.filas){
+            if( x<0 || y<0 || y>=this.nivelActual.columnas || x>=this.nivelActual.filas){
                 return ;
             }
             if(this.cuadros[x][y].visible==false && this.cuadros[x][y].marcado==false){
                 if(this.cuadros[x][y].valor=='💣'){
                     return ;
-                }else if(this.cuadros[x][y].valor!=0){
+                }else if(this.cuadros[x][y].valor>0){
+                    this.casillasMarcadas++;
                     this.cuadros[x][y].visible=true;
                     return ;
                 }
-                console.log("Tiene un cero");
+                this.casillasMarcadas++;
                 this.cuadros[x][y].visible=true;
                 this.mostrarCeros(x+1,y);
                 this.mostrarCeros(x,y+1);
                 this.mostrarCeros(x-1,y);
                 this.mostrarCeros(x,y-1);
+                this.mostrarCeros(x+1,y+1);
+                this.mostrarCeros(x-1,y-1);
+                this.mostrarCeros(x-1,y+1);
+                this.mostrarCeros(x+1,y-1);
             }
             
 
+        },
+        mostrarMinas(){
+            //Muestra todas las bombas;
+            for(let i=0;i<this.minas.length;i++){
+                let mina=this.minas[i];
+                this.cuadros[mina.fila][mina.columna].visible=true;
+                if(this.cuadros[mina.fila][mina.columna].marcado){
+                    this.cuadros[mina.fila][mina.columna].valor='❌';
+                }
+            }
+        },
+        partidaGanada(){
+            let casillasSinMinas=this.nivelActual.filas*this.nivelActual.columnas-this.nivelActual.minas
+            if(this.casillasMarcadas==casillasSinMinas){
+                return true;
+            }else{
+                return false;
+            }
         }
 
 
@@ -225,5 +256,12 @@ td{
     background-color: #c0c0c0;
     font-size: 1.5em;
     border: 1px solid #808080;
+    padding:0px
+}
+.sinMina{
+    background-color: #9F9F9F;
+    width: 100%;
+    height:100%;
+    border-color: #9F9F9F;
 }
 </style>
